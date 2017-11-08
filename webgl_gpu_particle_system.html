@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>three.js - gpu particle system</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	body {
+		font-family: Monospace;
+		background-color: #f0f0f0;
+		margin: 0px;
+		overflow: hidden;
+	}
+
+	#info {
+		position: absolute;
+		top: 0px;
+		width: 100%;
+		padding: 5px;
+		font-family:Monospace;
+		font-size:13px;
+		text-align:center;
+		color: #ffffff;
+	}
+
+	a {
+		color: #ffffff;
+	}
+	</style>
+</head>
+
+<body>
+
+	<div id="container"></div>
+	<div id="info">
+		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - GPU particle system plugin by <a href="http://charliehoey.com">Charlie Hoey</a>.
+	</div>
+
+	<script src="./lib/three.js"></script>
+	<script src="./lib/TrackballControls.js"></script>
+	<script src="./lib/dat.gui.min.js"></script>
+	<script src="./lib/stats.min.js"></script>
+	<script src="./lib/GPUParticleSystem.js"></script>
+  <script src="./src/fluidsolver.js"></script>
+
+	<script>
+
+
+    var NUM_OF_CELLS = 128, // Number of cells (not including the boundary)
+        VIEW_SIZE = 640,    // View size (square)
+        FPS = 60;           // Frames per second
+    // setInterval still seems to be faster than this most of the time.
+    window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+    requestAnimationFrame(update);
+//    setInterval(update, 1000 / FPS);
+
+    var CELL_SIZE = VIEW_SIZE / NUM_OF_CELLS,  // Size of each cell in pixels
+        CELL_SIZE_CEIL = Math.ceil(CELL_SIZE); // Size of each cell in pixels (ceiling)
+
+    /**
+     * A simple particle class.
+     *
+     * @param x {Number}
+     * @param y {Number}
+     * @constructor
+     */
+    function Particle(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.age = 0;
+        this.dead = false;
+    }
+
+    Particle.TIME_TO_LIVE = 5; // Time to live in seconds
+    // Globals
+    //var canvas = document.getElementById('main'),
+    //    context = canvas.getContext('2d');
+
+    // Create the fluid solver
+    var fs = new FluidSolver(NUM_OF_CELLS);
+    fs.resetVelocity();
+
+    // We draw the density on a bitmap for performance reasons
+    //var fdBuffer = context.createImageData(VIEW_SIZE, VIEW_SIZE);
+
+    // Demo app variables
+    var lastTime = Date.now(),
+        isMouseDown = false,
+        oldMouseX = 0,
+        oldMouseY = 0,
+        particles = [];
+
+    var options = {
+        drawVelocityField: false,
+        drawDensityField: true,
+        drawParticles: true,
+        grayscale: false,
+        resetParticles: function () { particles.length = 0; }
+    };
+
+
+    /**
+     * Update loop
+     */
+    function update(/*time*/) {
+        var i, j, k, l, m, dx, dy, color, cellIndex, deltaTime,
+            r, g, b, u, v, density, pxIdx, pxX, pxY,
+            invMaxColor = 1.0 / 255;
+
+        deltaTime = (Date.now() - lastTime) / 1000;
+        fs.dOld[fs.I(50, 50)] = 50;
+        // Step the fluid simulation
+        fs.velocityStep();
+        fs.densityStep();
+
+        // Clear the canvas
+        //context.clearRect(0, 0, VIEW_SIZE, VIEW_SIZE);
+
+        // Draw the last frame's buffer and clear for drawing the current.
+        //context.putImageData(fdBuffer, 0, 0);
+        //clearImageData(fdBuffer);
+
+        //drawGrid();
+
+        //if (options.drawVelocityField) {
+            // Call once per frame
+        //    context.lineWidth = 1;
+        //    context.strokeStyle = 'rgb(192, 0, 0)';
+        //    context.beginPath();
+        //}
+
+        // lastTime is now
+        lastTime = Date.now();
+
+        requestAnimationFrame(update);
+
+    } // End update()
+
+
+
+
+
+
+
+
+
+
+
+		var camera, tick = 0,
+			scene, renderer, clock = new THREE.Clock(),
+			controls, container, gui = new dat.GUI( { width: 350 } ),
+			options, spawnerOptions, particleSystem;
+
+		var stats;
+
+		init();
+		animate();
+
+		function init() {
+
+			//
+
+			container = document.getElementById( 'container' );
+
+			camera = new THREE.PerspectiveCamera( 28, window.innerWidth / window.innerHeight, 1, 10000 );
+			camera.position.z = 100;
+
+			scene = new THREE.Scene();
+
+			// The GPU Particle system extends THREE.Object3D, and so you can use it
+			// as you would any other scene graph component.	Particle positions will be
+			// relative to the position of the particle system, but you will probably only need one
+			// system for your whole scene
+
+			particleSystem = new THREE.GPUParticleSystem( {
+				maxParticles: 250000
+			} );
+
+			scene.add( particleSystem );
+
+			// options passed during each spawned
+
+			options = {
+				position: new THREE.Vector3(),
+				positionRandomness: .3,
+				velocity: new THREE.Vector3(),
+				velocityRandomness: .5,
+				color: 0xaa88ff,
+				colorRandomness: .2,
+				turbulence: .5,
+				lifetime: 2,
+				size: 5,
+				sizeRandomness: 1
+			};
+
+			spawnerOptions = {
+				spawnRate: 15000,
+				horizontalSpeed: 1.5,
+				verticalSpeed: 1.33,
+				timeScale: 1
+			};
+
+			//
+
+			gui.add( options, "velocityRandomness", 0, 3 );
+			gui.add( options, "positionRandomness", 0, 3 );
+			gui.add( options, "size", 1, 20 );
+			gui.add( options, "sizeRandomness", 0, 25 );
+			gui.add( options, "colorRandomness", 0, 1 );
+			gui.add( options, "lifetime", .1, 10 );
+			gui.add( options, "turbulence", 0, 1 );
+
+			gui.add( spawnerOptions, "spawnRate", 10, 30000 );
+			gui.add( spawnerOptions, "timeScale", -1, 1 );
+
+			//
+
+			stats = new Stats();
+			container.appendChild( stats.dom );
+
+			//
+
+			renderer = new THREE.WebGLRenderer();
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			container.appendChild( renderer.domElement );
+
+			//
+
+			controls = new THREE.TrackballControls( camera, renderer.domElement );
+			controls.rotateSpeed = 5.0;
+			controls.zoomSpeed = 2.2;
+			controls.panSpeed = 1;
+			controls.dynamicDampingFactor = 0.3;
+
+			window.addEventListener( 'resize', onWindowResize, false );
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+		}
+
+		function animate() {
+
+			requestAnimationFrame( animate );
+
+			controls.update();
+
+			var delta = clock.getDelta() * spawnerOptions.timeScale;
+
+			tick += delta;
+
+			if ( tick < 0 ) tick = 0;
+
+			if ( delta > 0 ) {
+        // Render fluid
+        for (i = 1; i <= NUM_OF_CELLS; i++) {
+            // The x position of current cell
+            dx = (i - 0.5) * CELL_SIZE;
+
+            for (j = 1; j <= NUM_OF_CELLS; j++) {
+                // The y position of current cell
+                dy = (j - 0.5) * CELL_SIZE;
+
+                cellIndex = i + (NUM_OF_CELLS + 2) * j;
+
+                // Draw density
+                density = fs.d[cellIndex];
+                options.position.x = dx;
+				        options.position.y = dy;
+				        options.position.z = 0;
+                options.color = density * 255;
+				        particleSystem.spawnParticle( options );
+
+            } // End for all cells in the y direction
+
+        } // End for all cells in the x direction
+
+
+
+
+			}
+
+			particleSystem.update( tick );
+
+			render();
+
+			stats.update();
+
+		}
+
+
+    //document.addEventListener('mousemove', onMouseMove, false);
+/*
+   function onMouseMove(event) {
+        var mouseX = ( event.clientX / window.innerWidth ) * 2 - 1,
+            mouseY = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+    //requestAnimationFrame( onMouseMove);
+
+			controls.update();
+
+			var delta = clock.getDelta() * spawnerOptions.timeScale;
+
+			tick += delta;
+
+			if ( tick < 0 ) tick = 0;
+
+			if ( delta > 0 ) {
+
+				options.position.x = 0;
+				options.position.y = 0;
+				options.position.z = Math.sin( tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed ) * 5;
+
+				for ( var x = 0; x < spawnerOptions.spawnRate * delta; x++ ) {
+
+					// Yep, that's really it.	Spawning particles is super cheap, and once you spawn them, the rest of
+					// their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
+
+					particleSystem.spawnParticle( options );
+
+				}
+
+			}
+      console.log(options.position.x);
+
+			particleSystem.update( tick );
+
+			render();
+
+			stats.update();
+
+       console.log(parseFloat(mouseX)+" "+parseFloat(mouseY));
+   }
+*/
+		function render() {
+
+			renderer.render( scene, camera );
+
+		}
+
+	</script>
+</body>
+
+</html>
