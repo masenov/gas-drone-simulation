@@ -42,6 +42,7 @@
 	<script src="./lib/stats.min.js"></script>
 	<script src="./lib/GPUParticleSystem.js"></script>
   <script src="./src/fluidsolver.js"></script>
+	<script src="./src/main.js"></script>
 
 	<script>
 
@@ -98,7 +99,7 @@
             invMaxColor = 1.0 / 255;
 
         deltaTime = (Date.now() - lastTime) / 1000;
-        fs.dOld[fs.I(50, 50)] = 50;
+        fs.dOld[fs.I(20, 20)] = 50;
         // Step the fluid simulation
         fs.velocityStep();
         fs.densityStep();
@@ -128,7 +129,7 @@
 			container = document.getElementById( 'container' );
 
 			camera = new THREE.PerspectiveCamera( 28, window.innerWidth / window.innerHeight, 1, 10000 );
-			camera.position.z = 100;
+			camera.position.z = 3250;
 
 			scene = new THREE.Scene();
 
@@ -147,17 +148,22 @@
 
 			options = {
 				position: new THREE.Vector3(),
+				positionRandomness: 0,
 				velocity: new THREE.Vector3(),
+				velocityRandomness: 0,
 				color: 0xaa88ff,
-				lifetime: 2,
-				size: 5,
+				colorRandomness: 0,
+				turbulence: 0,
+				lifetime: 0.1,
+				size: 10,
+				sizeRandomness: 0
 			};
 
 			spawnerOptions = {
-				spawnRate: 15000,
-				horizontalSpeed: 1.5,
-				verticalSpeed: 1.33,
-				timeScale: 1
+				spawnRate: 1500000,
+				horizontalSpeed: 0,
+				verticalSpeed: 0,
+				timeScale: 0
 			};
 
 			//
@@ -212,9 +218,10 @@
 			tick += delta;
 
 			if ( tick < 0 ) tick = 0;
-
-			if ( delta > 0 ) {
+			//if ( delta > 0 ) {
         // Render fluid
+        //NUM_OF_CELLS = 100;
+        for (k=1;k<100;k++){
         for (i = 1; i <= NUM_OF_CELLS; i++) {
             // The x position of current cell
             dx = (i - 0.5) * CELL_SIZE;
@@ -227,20 +234,20 @@
 
                 // Draw density
                 density = fs.d[cellIndex];
+                if (density > 0.7){
                 options.position.x = dx;
 				        options.position.y = dy;
-				        options.position.z = 0;
+				        options.position.z = k;
                 options.color = density * 255;
 				        particleSystem.spawnParticle( options );
-
+                }
             } // End for all cells in the y direction
 
         } // End for all cells in the x direction
+        }
 
 
 
-
-			}
 
 			particleSystem.update( tick );
 
