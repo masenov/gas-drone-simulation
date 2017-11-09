@@ -42,12 +42,11 @@
 	<script src="./lib/stats.min.js"></script>
 	<script src="./lib/GPUParticleSystem.js"></script>
   <script src="./src/fluidsolver.js"></script>
-	<script src="./src/main.js"></script>
 
 	<script>
 
 
-    var NUM_OF_CELLS = 128, // Number of cells (not including the boundary)
+    var NUM_OF_CELLS = 28, // Number of cells (not including the boundary)
         VIEW_SIZE = 640,    // View size (square)
         FPS = 60;           // Frames per second
     // setInterval still seems to be faster than this most of the time.
@@ -63,13 +62,16 @@
      *
      * @param x {Number}
      * @param y {Number}
+     * @param z {Number}
      * @constructor
      */
-    function Particle(x, y) {
+    function Particle(x, y, z) {
         this.x = x;
         this.y = y;
+        this.z = z;
         this.vx = 0;
         this.vy = 0;
+        this.vz = 0;
         this.age = 0;
         this.dead = false;
     }
@@ -94,12 +96,8 @@
      * Update loop
      */
     function update(/*time*/) {
-        var i, j, k, l, m, dx, dy, color, cellIndex, deltaTime,
-            r, g, b, u, v, density, pxIdx, pxX, pxY,
-            invMaxColor = 1.0 / 255;
-
         deltaTime = (Date.now() - lastTime) / 1000;
-        fs.dOld[fs.I(20, 20)] = 50;
+        fs.dOld[fs.I(20, 20, 20)] = 50;
         // Step the fluid simulation
         fs.velocityStep();
         fs.densityStep();
@@ -221,29 +219,32 @@
 			//if ( delta > 0 ) {
         // Render fluid
         //NUM_OF_CELLS = 100;
-        for (k=1;k<100;k++){
-        for (i = 1; i <= NUM_OF_CELLS; i++) {
-            // The x position of current cell
-            dx = (i - 0.5) * CELL_SIZE;
+        for (k = 1 ; k <= NUM_OF_CELLS ; k++) {
+            // The z position of current cell
+            dz = (k - 0.5) * CELL_SIZE;
+            for (i = 1; i <= NUM_OF_CELLS; i++) {
+                // The x position of current cell
+                dx = (i - 0.5) * CELL_SIZE;
 
-            for (j = 1; j <= NUM_OF_CELLS; j++) {
-                // The y position of current cell
-                dy = (j - 0.5) * CELL_SIZE;
+                for (j = 1; j <= NUM_OF_CELLS; j++) {
+                    // The y position of current cell
+                    dy = (j - 0.5) * CELL_SIZE;
 
-                cellIndex = i + (NUM_OF_CELLS + 2) * j;
+                    cellIndex = i + (NUM_OF_CELLS + 2) * j + (NUM_OF_CELLS + 2) * k;
 
-                // Draw density
-                density = fs.d[cellIndex];
-                if (density > 0.7){
-                options.position.x = dx;
-				        options.position.y = dy;
-				        options.position.z = k;
-                options.color = density * 255;
-				        particleSystem.spawnParticle( options );
-                }
-            } // End for all cells in the y direction
+                    // Draw density
+                    density = fs.d[cellIndex];
+                    //if (density > 0.7){
+                        options.position.x = dx;
+                        options.position.y = dy;
+                        options.position.z = dz;
+                    options.color = density * 255;
+                    options.color = 100;
+                        particleSystem.spawnParticle
+                    //}
+                } // End for all cells in the y direction
 
-        } // End for all cells in the x direction
+            } // End for all cells in the x direction
         }
 
 

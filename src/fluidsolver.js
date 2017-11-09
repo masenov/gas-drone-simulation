@@ -35,11 +35,11 @@
         // Number of iterations to use in the Gauss-Seidel method in linearSolve()
         this.iterations = 10;
 
-        this.doVorticityConfinement = true;
-        this.doBuoyancy = true;
+        this.doVorticityConfinement = false;
+        this.doBuoyancy = false;
 
         // Two extra cells in each dimension for the boundaries
-        this.numOfCells = (n + 2) * (n + 2);
+        this.numOfCells = (n + 2) * (n + 2) * (n + 2);
 
         this.tmp = null; // Scratch space for references swapping
 
@@ -49,19 +49,21 @@
         // Values for current simulation step
         this.u = new Array(this.numOfCells); // Velocity x
         this.v = new Array(this.numOfCells); // Velocity y
+        this.w = new Array(this.numOfCells); // Velocity z
         this.d = new Array(this.numOfCells); // Density
 
         // Values from the last simulation step
         this.uOld = new Array(this.numOfCells);
         this.vOld = new Array(this.numOfCells);
+        this.wOld = new Array(this.numOfCells);
         this.dOld = new Array(this.numOfCells);
 
         this.curlData = new Array(this.numOfCells); // The cell's curl
 
         // Initialize everything to zero
         for (i = 0; i < this.numOfCells; i++) {
-            this.d[i] = this.u[i] = this.v[i] = 0;
-            this.dOld[i] = this.uOld[i] = this.vOld[i] = 0;
+            this.d[i] = this.u[i] = this.v[i] = this.w[i] = 0;
+            this.dOld[i] = this.uOld[i] = this.vOld[i] = this.wOld[i] = 0;
             this.curlData[i] = 0;
         }
     }
@@ -70,6 +72,7 @@
     FluidSolver.BOUNDARY_NONE = 0;
     FluidSolver.BOUNDARY_LEFT_RIGHT = 1;
     FluidSolver.BOUNDARY_TOP_BOTTOM = 2;
+    FluidSolver.BOUNDARY_IN_OUT = 3;
 
     /**
      * A 'Private' stand alone function so closure compiler can inline this calculation once compiled.
@@ -78,11 +81,12 @@
      * @param n {Number}
      * @param i {Number}
      * @param j {Number}
+     * @param k {Number}
      * @returns {Number}
      * @private
      */
-    function I(n, i, j) {
-        return i + (n + 2) * j;
+    function I(n, i, j, k) {
+        return i + (n + 2) * j + (n + 2) * k;
     }
 
     /**
@@ -94,8 +98,8 @@
      * @return {number}
      * @public
      */
-    FluidSolver.prototype.I = function (i, j) {
-        return (i | i) + (this.n + 2) * (j | j);
+    FluidSolver.prototype.I = function (i, j, k) {
+        return (i | i) + (this.n + 2) * (j | j) + (this.n + 2) * (k | k);
     };
 
     /**
@@ -110,7 +114,7 @@
         this.diffuse(FluidSolver.BOUNDARY_NONE, this.d, this.dOld, this.diffusion);
 
         this.swapD();
-        this.advect(FluidSolver.BOUNDARY_NONE, this.d, this.dOld, this.u, this.v);
+        this.advect(FluidSolver.BOUNDARY_NONE, this.d, this.dOld, this.u, this.v, this.w);
 
         // Reset for next step
         for (i = 0; i < this.numOfCells; i++) {
@@ -126,11 +130,13 @@
 
         this.addSource(this.u, this.uOld);
         this.addSource(this.v, this.vOld);
+        this.addSource(this.w, this.wOld);
 
         if (this.doVorticityConfinement) {
-            this.vorticityConfinement(this.uOld, this.vOld);
+            this.vorticityConfinement(this.uOld, this.vOld, this.wOld);
             this.addSource(this.u, this.uOld);
             this.addSource(this.v, this.vOld);
+            this.addSource(this.w, this.wOld);
         }
 
         if (this.doBuoyancy) {
@@ -144,18 +150,23 @@
         this.swapV();
         this.diffuse(FluidSolver.BOUNDARY_TOP_BOTTOM, this.v, this.vOld, this.viscosity);
 
-        this.project(this.u, this.v, this.uOld, this.vOld);
+        this.swapW();
+        this.diffuse(FluidSolver.BOUNDARY_IN_OUT, this.w, this.wOld, this.viscosity);
+
+        this.project(this.u, this.v, this.w, this.uOld, this.vOld, this.wOld);
         this.swapU();
         this.swapV();
+        this.swapW();
 
-        this.advect(FluidSolver.BOUNDARY_LEFT_RIGHT, this.u, this.uOld, this.uOld, this.vOld);
-        this.advect(FluidSolver.BOUNDARY_TOP_BOTTOM, this.v, this.vOld, this.uOld, this.vOld);
+        this.advect(FluidSolver.BOUNDARY_LEFT_RIGHT, this.u, this.uOld, this.uOld, this.vOld, this.wOld);
+        this.advect(FluidSolver.BOUNDARY_TOP_BOTTOM, this.v, this.vOld, this.uOld, this.vOld, this.wOld);
+        this.advect(FluidSolver.BOUNDARY_IN_OUT, this.w, this.wOld, this.uOld, this.vOld, this.wOld);
 
-        this.project(this.u, this.v, this.uOld, this.vOld);
+        this.project(this.u, this.v, this.w, this.uOld, this.vOld, this.wOld);
 
         // Reset for next step
         for (i = 0; i < this.numOfCells; i++) {
-            this.uOld[i] = this.vOld[i] = 0;
+            this.uOld[i] = this.vOld[i] = this.wOld[i] = 0;
         }
     };
 
@@ -176,7 +187,7 @@
         var i;
         for (i = 0; i < this.numOfCells; i++) {
             // Set a small value so we can render the velocity field
-            this.v[i] = this.u[i] = 0.001;
+            this.v[i] = this.u[i] = this.w[i] = 0.001;
         }
     };
 
@@ -198,6 +209,16 @@
         this.tmp = this.v;
         this.v = this.vOld;
         this.vOld = this.tmp;
+    };
+
+    /**
+     * Swap velocity z reference.
+     * @private
+     */
+    FluidSolver.prototype.swapW = function () {
+        this.tmp = this.w;
+        this.w = this.wOld;
+        this.wOld = this.tmp;
     };
 
     /**
@@ -338,7 +359,7 @@
      * @private
      */
     FluidSolver.prototype.diffuse = function (b, x, x0, diffusion) {
-        var a = this.dt * diffusion * this.n * this.n;
+        var a = this.dt * diffusion * this.n * this.n * this.n;
 
         this.linearSolve(b, x, x0, a, 1 + 4 * a);
     };
@@ -355,34 +376,49 @@
      * @param v {Array<Number>}
      * @private
      */
-    FluidSolver.prototype.advect = function (b, d, d0, u, v) {
-        var i, j, i0, j0, i1, j1;
-        var x, y, s0, t0, s1, t1, dt0;
+    FluidSolver.prototype.advect = function (b, d, d0, u, v, w) {
+        var i, j, k, i0, j0, k0, i1, j1, k1;
+        var x, y, z, s0, t0, u0, s1, t1, u1, dt0;
 
         dt0 = this.dt * this.n;
         for (i = 1; i <= this.n; i++) {
             for (j = 1; j <= this.n; j++) {
-                x = i - dt0 * u[I(this.n, i, j)];
-                y = j - dt0 * v[I(this.n, i, j)];
+                for (k = 1; k <= this.n; k++) {
+                    x = i - dt0 * u[I(this.n, i, j, k)];
+                    y = j - dt0 * v[I(this.n, i, j, k)];
+                    z = k - dt0 * w[I(this.n, i, j, k)];
 
-                if (x < 0.5) x = 0.5;
-                if (x > this.n + 0.5) x = this.n + 0.5;
+                    if (x < 0.5) x = 0.5;
+                    if (x > this.n + 0.5) x = this.n + 0.5;
 
-                i0 = (x | x);
-                i1 = i0 + 1;
+                    i0 = (x | x);
+                    i1 = i0 + 1;
 
-                if (y < 0.5) y = 0.5;
-                if (y > this.n + 0.5) y = this.n + 0.5;
+                    if (y < 0.5) y = 0.5;
+                    if (y > this.n + 0.5) y = this.n + 0.5;
 
-                j0 = (y | y);
-                j1 = j0 + 1;
-                s1 = x - i0;
-                s0 = 1 - s1;
-                t1 = y - j0;
-                t0 = 1 - t1;
+                    j0 = (y | y);
+                    j1 = j0 + 1;
 
-                d[I(this.n, i, j)] = s0 * (t0 * d0[I(this.n, i0, j0)] + t1 * d0[I(this.n, i0, j1)]) +
-                    s1 * (t0 * d0[I(this.n, i1, j0)] + t1 * d0[I(this.n, i1, j1)]);
+                    if (z < 0.5) z = 0.5;
+                    if (z > this.n + 0.5) z = this.n + 0.5;
+
+                    k0 = (z | z);
+                    k1 = k0 + 1;
+
+                    s1 = x - i0;
+                    s0 = 1 - s1;
+                    t1 = y - j0;
+                    t0 = 1 - t1;
+                    u1 = z - u0;
+                    u0 = 1 - u1;
+
+                    d[I(this.n, i, j, k)] = s0 * (t0 * u0 * d0[I(this.n, i0, j0, k0)] + t1 * u0 * d0[I(this.n, i0, j1, k0)]) +
+                                            s1 * (t0 * u0 * d0[I(this.n, i1, j0, k0)] + t1 * u0 * d0[I(this.n, i1, j1, k0)]) +
+                                            s0 * (t0 * u1 * d0[I(this.n, i0, j0, k1)] + t1 * u1 * d0[I(this.n, i0, j1, k1)]) +
+                                            s1 * (t0 * u1 * d0[I(this.n, i1, j0, k1)] + t1 * u1 * d0[I(this.n, i1, j1, k1)]);
+
+                }
             }
         }
 
@@ -400,21 +436,22 @@
      *
      * @param u {Array<Number>}
      * @param v {Array<Number>}
+     * @param w {Array<Number>}
      * @param p {Array<Number>}
      * @param div {Array<Number>}
      * @private
      */
-    FluidSolver.prototype.project = function (u, v, p, div) {
-        var i, j;
+    FluidSolver.prototype.project = function (u, v, w, p, div) {
+        var i, j, k;
 
         // Calculate the gradient field
         var h = 1.0 / this.n;
         for (i = 1; i <= this.n; i++) {
             for (j = 1; j <= this.n; j++) {
-                div[I(this.n, i, j)] = -0.5 * h * (u[I(this.n, i + 1, j)] - u[I(this.n, i - 1, j)] +
-                    v[I(this.n, i, j + 1)] - v[I(this.n, i, j - 1)]);
-
-                p[I(this.n, i, j)] = 0;
+                for (k = 1; k <= this.n; k++) {
+                    div[I(this.n, i, j, k)] = -0.5 * h * (u[I(this.n, i + 1, j, k)] - u[I(this.n, i - 1, j, k)] + v[I(this.n, i, j + 1)] - v[I(this.n, i, j - 1)] + w[I(this.n, i, j, k + 1)] - w[I(this.n, i, j, k - 1)]);
+                    p[I(this.n, i, j, k)] = 0;
+                }
             }
         }
 
@@ -427,13 +464,17 @@
         // Subtract the gradient field from the velocity field to get a mass conserving velocity field.
         for (i = 1; i <= this.n; i++) {
             for (j = 1; j <= this.n; j++) {
-                u[I(this.n, i, j)] -= 0.5 * (p[I(this.n, i + 1, j)] - p[I(this.n, i - 1, j)]) / h;
-                v[I(this.n, i, j)] -= 0.5 * (p[I(this.n, i, j + 1)] - p[I(this.n, i, j - 1)]) / h;
+                for (k = 1; k <= this.n; k++) {
+                    u[I(this.n, i, j, k)] -= 0.5 * (p[I(this.n, i + 1, j, k)] - p[I(this.n, i - 1, j, k)]) / h;
+                    v[I(this.n, i, j, k)] -= 0.5 * (p[I(this.n, i, j + 1, k)] - p[I(this.n, i, j - 1, k)]) / h;
+                    w[I(this.n, i, j, k)] -= 0.5 * (p[I(this.n, i, j, k + 1)] - p[I(this.n, i, j, k - 1)]) / h;
+                }
             }
         }
 
         this.setBoundary(FluidSolver.BOUNDARY_LEFT_RIGHT, u);
         this.setBoundary(FluidSolver.BOUNDARY_TOP_BOTTOM, v);
+        this.setBoundary(FluidSolver.BOUNDARY_IN_OUT, w);
     };
 
     /**
@@ -447,13 +488,16 @@
      * @private
      */
     FluidSolver.prototype.linearSolve = function (b, x, x0, a, c) {
-        var i, j, k, invC = 1.0 / c;
+        var i, j, k, l, invC = 1.0 / c;
 
-        for (k = 0; k < this.iterations; k++) {
+        for (l = 0; l < this.iterations; l++) {
             for (i = 1; i <= this.n; i++) {
                 for (j = 1; j <= this.n; j++) {
-                    x[I(this.n, i, j)] = (x0[I(this.n, i, j)] + a * (x[I(this.n, i - 1, j)] + x[I(this.n, i + 1, j)] +
-                        x[I(this.n, i, j - 1)] + x[I(this.n, i, j + 1)])) * invC;
+                    for (k = 1; k <= this.n; k++) {
+                        x[I(this.n, i, j, k)] = (x0[I(this.n, i, j, k)] + a * (x[I(this.n, i - 1, j, k)] + x[I(this.n, i + 1, j, k)] +
+                                                                               x[I(this.n, i, j - 1, k)] + x[I(this.n, i, j + 1, k)] +
+                                                                               x[I(this.n, i, j, k - 1)] + x[I(this.n, i, j, k + 1)])) * invC;
+                    }
                 }
             }
 
@@ -469,26 +513,37 @@
      * @private
      */
     FluidSolver.prototype.setBoundary = function (b, x) {
-        var i;
+        var i, j;
 
         for (i = 1; i <= this.n; i++) {
-            x[I(this.n, 0, i)] = (b === FluidSolver.BOUNDARY_LEFT_RIGHT) ?
-                -x[I(this.n, 1, i)] : x[I(this.n, 1, i)];
+            for (j = 1; j <= this.n; j++) {
 
-            x[I(this.n, this.n + 1, i)] = (b === FluidSolver.BOUNDARY_LEFT_RIGHT) ?
-                -x[I(this.n, this.n, i)] : x[I(this.n, this.n, i)];
+                x[I(this.n, 0, i, j)] = (b === FluidSolver.BOUNDARY_LEFT_RIGHT) ? -x[I(this.n, 1, i, j)] : x[I(this.n, 1, i, j)];
 
-            x[I(this.n, i, 0)] = (b === FluidSolver.BOUNDARY_TOP_BOTTOM) ?
-                -x[I(this.n, i, 1)] : x[I(this.n, i, 1)];
+                x[I(this.n, this.n + 1, i, j)] = (b === FluidSolver.BOUNDARY_LEFT_RIGHT) ? -x[I(this.n, this.n, i, j)] : x[I(this.n, this.n, i, j)];
 
-            x[I(this.n, i, this.n + 1)] = (b === FluidSolver.BOUNDARY_TOP_BOTTOM) ?
-                -x[I(this.n, i, this.n)] : x[I(this.n, i, this.n)];
+                x[I(this.n, i, 0, j)] = (b === FluidSolver.BOUNDARY_TOP_BOTTOM) ? -x[I(this.n, i, 1, j)] : x[I(this.n, i, 1, j)];
+
+                x[I(this.n, i, this.n + 1, j)] = (b === FluidSolver.BOUNDARY_TOP_BOTTOM) ? -x[I(this.n, i, this.n, j)] : x[I(this.n, i, this.n, j)];
+
+                x[I(this.n, i, j, 0)] = (b === FluidSolver.BOUNDARY_IN_OUT) ? -x[I(this.n, i, j, 1)] : x[I(this.n, i, j, 1)];
+
+                x[I(this.n, i, j, this.n + 1)] = (b === FluidSolver.BOUNDARY_IN_OUT) ? -x[I(this.n, i, j, this.n)] : x[I(this.n, i, j, this.n)];
+            }
         }
 
-        x[I(this.n, 0, 0)] = 0.5 * (x[I(this.n, 1, 0)] + x[I(this.n, 0, 1)]);
-        x[I(this.n, 0, this.n + 1)] = 0.5 * (x[I(this.n, 1, this.n + 1)] + x[I(this.n, 0, this.n)]);
-        x[I(this.n, this.n + 1, 0)] = 0.5 * (x[I(this.n, this.n, 0)] + x[I(this.n, this.n + 1, 1)]);
-        x[I(this.n, this.n + 1, this.n + 1)] = 0.5 * (x[I(this.n, this.n, this.n + 1)] + x[I(this.n, this.n + 1, this.n)]);
+        x[I(this.n, 0, 0, 0)] = 0.5 * (x[I(this.n, 1, 0, 0)] + x[I(this.n, 0, 1, 0)] + x[I(this.n, 0, 0, 1)]);
+        x[I(this.n, 0, this.n + 1, 0)] = 0.5 * (x[I(this.n, 1, this.n + 1, 0)] + x[I(this.n, 0, this.n, 0)] + x[I(this.n, 0, this.n + 1, 1)]);
+        x[I(this.n, this.n + 1, 0, 0)] = 0.5 * (x[I(this.n, this.n, 0, 0)] + x[I(this.n, this.n + 1, 1, 0)] + x[I(this.n, this.n + 1, 0, 1)]);
+        x[I(this.n, this.n + 1, this.n + 1, 0)] = 0.5 * (x[I(this.n, this.n, this.n + 1, 0)] + x[I(this.n, this.n + 1, this.n, 0)] + x[I(this.n, this.n + 1, this.n + 1, 1)]);
+        x[I(this.n, 0, 0, this.n + 1)] = 0.5 * (x[I(this.n, 1, 0, this.n + 1)] + x[I(this.n, 0, 1, this.n + 1)] + x[I(this.n, 0, 0, this.n)]);
+        x[I(this.n, 0, this.n + 1, this.n + 1)] = 0.5 * (x[I(this.n, 1, this.n + 1, this.n + 1)] + x[I(this.n, 0, this.n, this.n + 1)] + x[I(this.n, 0, this.n + 1, this.n)]);
+        x[I(this.n, this.n + 1, 0, this.n + 1)] = 0.5 * (x[I(this.n, this.n, 0, this.n + 1)] + x[I(this.n, this.n + 1, 1, this.n + 1)] + x[I(this.n, this.n + 1, 0, this.n)]);
+        x[I(this.n, this.n + 1, this.n + 1, this.n + 1)] = 0.5 * (x[I(this.n, this.n, this.n + 1, this.n + 1)] + x[I(this.n, this.n + 1, this.n, this.n + 1)] + x[I(this.n, this.n + 1, this.n + 1, this.n)]);
+
+
+
+
     };
 
 })(window);
