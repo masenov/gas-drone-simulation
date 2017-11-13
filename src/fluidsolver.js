@@ -361,7 +361,7 @@
     FluidSolver.prototype.diffuse = function (b, x, x0, diffusion) {
         var a = this.dt * diffusion * this.n * this.n * this.n;
 
-        this.linearSolve(b, x, x0, a, 1 + 4 * a);
+        this.linearSolve(b, x, x0, a, 1 + 6 * a);
     };
 
     /**
@@ -410,7 +410,7 @@
                     s0 = 1 - s1;
                     t1 = y - j0;
                     t0 = 1 - t1;
-                    u1 = z - u0;
+                    u1 = z - k0;
                     u0 = 1 - u1;
 
                     d[I(this.n, i, j, k)] = s0 * (t0 * u0 * d0[I(this.n, i0, j0, k0)] + t1 * u0 * d0[I(this.n, i0, j1, k0)]) +
@@ -449,7 +449,7 @@
         for (i = 1; i <= this.n; i++) {
             for (j = 1; j <= this.n; j++) {
                 for (k = 1; k <= this.n; k++) {
-                    div[I(this.n, i, j, k)] = -0.5 * h * (u[I(this.n, i + 1, j, k)] - u[I(this.n, i - 1, j, k)] + v[I(this.n, i, j + 1)] - v[I(this.n, i, j - 1)] + w[I(this.n, i, j, k + 1)] - w[I(this.n, i, j, k - 1)]);
+                    div[I(this.n, i, j, k)] = -1.0/3.0 * h * (u[I(this.n, i + 1, j, k)] - u[I(this.n, i - 1, j, k)] + v[I(this.n, i, j + 1, k)] - v[I(this.n, i, j - 1, k)] + w[I(this.n, i, j, k + 1)] - w[I(this.n, i, j, k - 1)]);
                     p[I(this.n, i, j, k)] = 0;
                 }
             }
@@ -459,7 +459,7 @@
         this.setBoundary(FluidSolver.BOUNDARY_NONE, p);
 
         // Solve the Poisson equations
-        this.linearSolve(FluidSolver.BOUNDARY_NONE, p, div, 1, 4);
+        this.linearSolve(FluidSolver.BOUNDARY_NONE, p, div, 1, 6);
 
         // Subtract the gradient field from the velocity field to get a mass conserving velocity field.
         for (i = 1; i <= this.n; i++) {
@@ -532,14 +532,14 @@
             }
         }
 
-        x[I(this.n, 0, 0, 0)] = 0.5 * (x[I(this.n, 1, 0, 0)] + x[I(this.n, 0, 1, 0)] + x[I(this.n, 0, 0, 1)]);
-        x[I(this.n, 0, this.n + 1, 0)] = 0.5 * (x[I(this.n, 1, this.n + 1, 0)] + x[I(this.n, 0, this.n, 0)] + x[I(this.n, 0, this.n + 1, 1)]);
-        x[I(this.n, this.n + 1, 0, 0)] = 0.5 * (x[I(this.n, this.n, 0, 0)] + x[I(this.n, this.n + 1, 1, 0)] + x[I(this.n, this.n + 1, 0, 1)]);
-        x[I(this.n, this.n + 1, this.n + 1, 0)] = 0.5 * (x[I(this.n, this.n, this.n + 1, 0)] + x[I(this.n, this.n + 1, this.n, 0)] + x[I(this.n, this.n + 1, this.n + 1, 1)]);
-        x[I(this.n, 0, 0, this.n + 1)] = 0.5 * (x[I(this.n, 1, 0, this.n + 1)] + x[I(this.n, 0, 1, this.n + 1)] + x[I(this.n, 0, 0, this.n)]);
-        x[I(this.n, 0, this.n + 1, this.n + 1)] = 0.5 * (x[I(this.n, 1, this.n + 1, this.n + 1)] + x[I(this.n, 0, this.n, this.n + 1)] + x[I(this.n, 0, this.n + 1, this.n)]);
-        x[I(this.n, this.n + 1, 0, this.n + 1)] = 0.5 * (x[I(this.n, this.n, 0, this.n + 1)] + x[I(this.n, this.n + 1, 1, this.n + 1)] + x[I(this.n, this.n + 1, 0, this.n)]);
-        x[I(this.n, this.n + 1, this.n + 1, this.n + 1)] = 0.5 * (x[I(this.n, this.n, this.n + 1, this.n + 1)] + x[I(this.n, this.n + 1, this.n, this.n + 1)] + x[I(this.n, this.n + 1, this.n + 1, this.n)]);
+        x[I(this.n, 0, 0, 0)] = 1.0/3.0 * (x[I(this.n, 1, 0, 0)] + x[I(this.n, 0, 1, 0)] + x[I(this.n, 0, 0, 1)]);
+        x[I(this.n, 0, this.n + 1, 0)] = 1.0/3.0 * (x[I(this.n, 1, this.n + 1, 0)] + x[I(this.n, 0, this.n, 0)] + x[I(this.n, 0, this.n + 1, 1)]);
+        x[I(this.n, this.n + 1, 0, 0)] = 1.0/3.0 * (x[I(this.n, this.n, 0, 0)] + x[I(this.n, this.n + 1, 1, 0)] + x[I(this.n, this.n + 1, 0, 1)]);
+        x[I(this.n, this.n + 1, this.n + 1, 0)] = 1.0/3.0 * (x[I(this.n, this.n, this.n + 1, 0)] + x[I(this.n, this.n + 1, this.n, 0)] + x[I(this.n, this.n + 1, this.n + 1, 1)]);
+        x[I(this.n, 0, 0, this.n + 1)] = 1.0/3.0 * (x[I(this.n, 1, 0, this.n + 1)] + x[I(this.n, 0, 1, this.n + 1)] + x[I(this.n, 0, 0, this.n)]);
+        x[I(this.n, 0, this.n + 1, this.n + 1)] = 1.0/3.0 * (x[I(this.n, 1, this.n + 1, this.n + 1)] + x[I(this.n, 0, this.n, this.n + 1)] + x[I(this.n, 0, this.n + 1, this.n)]);
+        x[I(this.n, this.n + 1, 0, this.n + 1)] = 1.0/3.0 * (x[I(this.n, this.n, 0, this.n + 1)] + x[I(this.n, this.n + 1, 1, this.n + 1)] + x[I(this.n, this.n + 1, 0, this.n)]);
+        x[I(this.n, this.n + 1, this.n + 1, this.n + 1)] = 1.0/3.0 * (x[I(this.n, this.n, this.n + 1, this.n + 1)] + x[I(this.n, this.n + 1, this.n, this.n + 1)] + x[I(this.n, this.n + 1, this.n + 1, this.n)]);
 
 
 
