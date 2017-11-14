@@ -35,8 +35,8 @@
         // Number of iterations to use in the Gauss-Seidel method in linearSolve()
         this.iterations = 10;
 
-        this.doVorticityConfinement = false;
-        this.doBuoyancy = false;
+        this.doVorticityConfinement = true;
+        this.doBuoyancy = true;
 
         // Two extra cells in each dimension for the boundaries
         this.numOfCells = (n + 2) * (n + 2) * (n + 2);
@@ -133,10 +133,9 @@
         this.addSource(this.w, this.wOld);
 
         if (this.doVorticityConfinement) {
-            this.vorticityConfinement(this.uOld, this.vOld, this.wOld);
+            this.vorticityConfinement(this.uOld, this.vOld);
             this.addSource(this.u, this.uOld);
             this.addSource(this.v, this.vOld);
-            this.addSource(this.w, this.wOld);
         }
 
         if (this.doBuoyancy) {
@@ -321,10 +320,10 @@
      * @private
      */
     FluidSolver.prototype.buoyancy = function (buoy) {
-        var i, j, length,
+        var i, j, k, length,
             tAmb = 0,
-            a = 0.000625,
-            b = 0.025;
+            a = 0.625,
+            b = 0.25;
 
         // Sum all temperatures
 //    for (i = 1; i <= this.n; i++) {
@@ -340,12 +339,14 @@
         }
 
         // Calculate average temperature of the grid
-        tAmb /= (this.n * this.n);
+        tAmb /= (this.n * this.n * this.n);
 
         // For each cell compute buoyancy force
         for (i = 1; i <= this.n; i++) {
             for (j = 1; j <= this.n; j++) {
-                buoy[I(this.n, i, j)] = a * this.d[I(this.n, i, j)] + -b * (this.d[I(this.n, i, j)] - tAmb);
+                for (k = 1; k <= this.n; k++) {
+                    buoy[I(this.n, i, j, k)] = a * this.d[I(this.n, i, j, k)] + -b * (this.d[I(this.n, i, j, k)] - tAmb);
+                }
             }
         }
     };
