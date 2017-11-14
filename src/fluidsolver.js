@@ -86,7 +86,7 @@
      * @private
      */
     function I(n, i, j, k) {
-        return i + (n + 2) * j + (n + 2) * k;
+        return i + (n + 2) * j + (n + 2) * (n + 2) * k;
     }
 
     /**
@@ -99,7 +99,7 @@
      * @public
      */
     FluidSolver.prototype.I = function (i, j, k) {
-        return (i | i) + (this.n + 2) * (j | j) + (this.n + 2) * (k | k);
+        return (i | i) + (this.n + 2) * (j | j) + (this.n + 2) * (this.n + 2) * (k | k);
     };
 
     /**
@@ -153,7 +153,8 @@
         this.swapW();
         this.diffuse(FluidSolver.BOUNDARY_IN_OUT, this.w, this.wOld, this.viscosity);
 
-        this.project(this.u, this.v, this.w, this.uOld, this.vOld, this.wOld);
+        this.project(this.u, this.v, this.w, this.uOld, this.vOld);
+        var a = this.v;
         this.swapU();
         this.swapV();
         this.swapW();
@@ -162,7 +163,7 @@
         this.advect(FluidSolver.BOUNDARY_TOP_BOTTOM, this.v, this.vOld, this.uOld, this.vOld, this.wOld);
         this.advect(FluidSolver.BOUNDARY_IN_OUT, this.w, this.wOld, this.uOld, this.vOld, this.wOld);
 
-        this.project(this.u, this.v, this.w, this.uOld, this.vOld, this.wOld);
+        this.project(this.u, this.v, this.w, this.uOld, this.vOld);
 
         // Reset for next step
         for (i = 0; i < this.numOfCells; i++) {

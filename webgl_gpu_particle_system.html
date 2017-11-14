@@ -97,7 +97,7 @@
      */
     function update(/*time*/) {
         deltaTime = (Date.now() - lastTime) / 1000;
-        fs.dOld[fs.I(2, 2, 2)] = 10;
+        fs.dOld[fs.I(1, 1, 1)] = 20;
         // Step the fluid simulation
         fs.velocityStep();
         fs.densityStep();
@@ -230,7 +230,7 @@
                     // The y position of current cell
                     dy = (j - 0.5) * CELL_SIZE;
 
-                    cellIndex = i + (NUM_OF_CELLS + 2) * j + (NUM_OF_CELLS + 2) * k;
+                    cellIndex = i + (NUM_OF_CELLS + 2) * j + (NUM_OF_CELLS + 2) * (NUM_OF_CELLS + 2) * k;
 
                     // Draw density
                     density = fs.d[cellIndex];
