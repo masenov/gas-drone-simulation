@@ -234,14 +234,14 @@
 
                     // Draw density
                     density = fs.d[cellIndex];
-                    //if (density > 0.00){
+                    if (density > 0.00){
                         options.position.x = dx;
                         options.position.y = dy;
                         options.position.z = dz;
                         options.color = density * 255;
                         //options.color = 100;
                         particleSystem.spawnParticle(options);
-                    //}
+                    }
 
                 } // End for all cells in the y direction
 
