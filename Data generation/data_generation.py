@@ -2,7 +2,7 @@ from gaussian import *
 
 
 
-sigma_v = 10
+sigma_v = 0
 l = 4
 sigma_f = 10
 

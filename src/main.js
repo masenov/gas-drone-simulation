@@ -274,8 +274,8 @@
         }
 
         // Mouse velocity
-        var du = 0.5,
-            dv = 0.5;
+        var du = 0.3,
+            dv = 0.3;
         // Add the mouse velocity to cells above, below, to the left, and to the right as well.
         i = 64;
         j = 64;
