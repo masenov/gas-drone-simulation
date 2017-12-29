@@ -43,6 +43,13 @@
 
         this.tmp = null; // Scratch space for references swapping
 
+        this.windSpeed = 0.03;
+        this.windDirection = 0.0;
+        this.windLocations = 32;
+
+        this.gasRelease = 10;
+        this.gasLocationX = 60;
+        this.gasLocationY = 60;
         // This might benefit from using typed arrays like Float32Array in some configuration.
         // But I haven't seen any significant improvement on Chrome because V8 probably does it on its own.
 

@@ -6,7 +6,7 @@
 (function (window, document) {
     'use strict';
 
-    var NUM_OF_CELLS = 128, // Number of cells (not including the boundary)
+    var NUM_OF_CELLS = 256, // Number of cells (not including the boundary)
         VIEW_SIZE = 640,    // View size (square)
         FPS = 60;           // Frames per second
 
@@ -95,6 +95,13 @@
     gui.add(fs, 'resetDensity').name('Reset Density');
     gui.add(options, 'resetParticles').name('Reset Particles');
 
+    gui.add(fs, 'windSpeed', 0, 5).step(0.01).name('Wind Speed');
+    gui.add(fs, 'windDirection', 0, 360).step(1).name('Wind Directions');
+    gui.add(fs, 'windLocations', 0, 128).step(1).name('Wind Locations');
+
+    gui.add(fs, 'gasRelease', 0, 300).step(1).name('Gas Release');
+    gui.add(fs, 'gasLocationX', 0, NUM_OF_CELLS).step(1).name('Gas Location X coordinate');
+    gui.add(fs, 'gasLocationY', 0, NUM_OF_CELLS).step(1).name('Gas Location Y coordinate');
     if (isMobile) {
         // Custom placement on mobile.
         document.getElementById('gui-container').appendChild(gui.domElement);
@@ -134,6 +141,11 @@
      *
      * @param event {MouseEvent|Object}
      */
+
+    function toRadians (angle) {
+        return angle * (Math.PI / 180);
+    }
+
     function onMouseMove(event) {
         var k, p;
 
@@ -150,7 +162,7 @@
         // Mouse velocity
         var du = (mouseX - oldMouseX) * 1.5,
             dv = (mouseY - oldMouseY) * 1.5;
-        console.log(mouseX,mouseY,du,dv,i,j);
+        //console.log(mouseX,mouseY,du,dv,i,j);
         // Add the mouse velocity to cells above, below, to the left, and to the right as well.
         fs.uOld[fs.I(i, j)] = du;
         fs.vOld[fs.I(i, j)] = dv;
@@ -250,7 +262,8 @@
             r, g, b, u, v, density, pxIdx, pxX, pxY,
             invMaxColor = 1.0 / 255;
 
-        fs.dOld[fs.I(64, 64)] = 10;
+        fs.dOld[fs.I(fs.gasLocationX, fs.gasLocationY)] = fs.gasRelease;
+        console.log(fs.d[fs.I(10,10)]);
         deltaTime = (Date.now() - lastTime) / 1000;
 
         // Step the fluid simulation
@@ -274,12 +287,12 @@
         }
 
         // Artificial wind field
-        var du = 0.03,
-            dv = 0.03;
+        var du = Math.sin(toRadians(fs.windDirection-180))*fs.windSpeed,
+            dv = Math.cos(toRadians(fs.windDirection-180))*fs.windSpeed;
         var ii,jj;
         // Add the mouse velocity to cells above, below, to the left, and to the right as well.
-        var np = 16;
-        var acc = 128/np;
+        var np = fs.windLocations;
+        var acc = NUM_OF_CELLS/np;
         for (i = 0; i<np; i++) {
             for (j = 0; j < np; j++) {
                 ii = i*acc;
