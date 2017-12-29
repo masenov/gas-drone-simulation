@@ -250,7 +250,7 @@
             r, g, b, u, v, density, pxIdx, pxX, pxY,
             invMaxColor = 1.0 / 255;
 
-        fs.dOld[fs.I(64, 64)] = 20;
+        fs.dOld[fs.I(64, 64)] = 10;
         deltaTime = (Date.now() - lastTime) / 1000;
 
         // Step the fluid simulation
@@ -273,26 +273,22 @@
             context.beginPath();
         }
 
-        // Mouse velocity
-        var du = 0.3,
-            dv = 0.3;
+        // Artificial wind field
+        var du = 0.03,
+            dv = 0.03;
+        var ii,jj;
         // Add the mouse velocity to cells above, below, to the left, and to the right as well.
-        i = 64;
-        j = 64;
-        fs.uOld[fs.I(i, j)] = du;
-        fs.vOld[fs.I(i, j)] = dv;
+        var np = 16;
+        var acc = 128/np;
+        for (i = 0; i<np; i++) {
+            for (j = 0; j < np; j++) {
+                ii = i*acc;
+                jj = j*acc;
+                fs.uOld[fs.I(ii, jj)] = du;
+                fs.vOld[fs.I(ii, jj)] = dv;
 
-        fs.uOld[fs.I(i + 1, j)] = du;
-        fs.vOld[fs.I(i + 1, j)] = dv;
-
-        fs.uOld[fs.I(i - 1, j)] = du;
-        fs.vOld[fs.I(i - 1, j)] = dv;
-
-        fs.uOld[fs.I(i, j + 1)] = du;
-        fs.vOld[fs.I(i, j + 1)] = dv;
-
-        fs.uOld[fs.I(i, j - 1)] = du;
-        fs.vOld[fs.I(i, j - 1)] = dv;
+            }
+        }
         // Render fluid
         for (i = 1; i <= NUM_OF_CELLS; i++) {
             // The x position of current cell
