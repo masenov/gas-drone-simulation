@@ -2,3 +2,5 @@ Data generation/data/*
 *.pyc
 
 *.pdf
+
+nodejs/node_modules/
