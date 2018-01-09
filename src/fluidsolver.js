@@ -29,13 +29,13 @@
         this.n = n;
 
         this.dt = 0.1; // The simulation time-step
-        this.diffusion = 0.0002; // The amount of diffusion
+        this.diffusion = 0.0001; // The amount of diffusion
         this.viscosity = 0; // The fluid's viscosity
 
         // Number of iterations to use in the Gauss-Seidel method in linearSolve()
         this.iterations = 10;
 
-        this.doVorticityConfinement = false;
+        this.doVorticityConfinement = true;
         this.doBuoyancy = false;
 
         // Two extra cells in each dimension for the boundaries
@@ -43,13 +43,13 @@
 
         this.tmp = null; // Scratch space for references swapping
 
-        this.windSpeed = 0.03;
+        this.windSpeed = 0.16;
         this.windDirection = 0.0;
         this.windLocations = 32;
 
-        this.gasRelease = 10;
-        this.gasLocationX = 60;
-        this.gasLocationY = 60;
+        this.gasRelease = 110;
+        this.gasLocationX = 128;
+        this.gasLocationY = 128;
         // This might benefit from using typed arrays like Float32Array in some configuration.
         // But I haven't seen any significant improvement on Chrome because V8 probably does it on its own.
 

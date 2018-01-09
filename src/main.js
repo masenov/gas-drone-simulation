@@ -81,22 +81,22 @@
 
     gui.add(fs, 'dt', 0.05, 0.5).step(0.01).name('Time Step');
     gui.add(fs, 'iterations', 5, 40).step(1).name('Solver Iterations');
-    gui.add(fs, 'diffusion', 0.0, 0.001).step(0.0001).name('Diffusion');
+    gui.add(fs, 'diffusion', 0.0, 0.001).step(0.000001).name('Diffusion');
     gui.add(fs, 'viscosity', { None: 0.0, Low: 0.0002, High: 0.001 }).name('Viscosity');
     gui.add(fs, 'doVorticityConfinement').name('Vorticity Confinement');
-    gui.add(fs, 'doBuoyancy').name('Buoyancy');
+    //gui.add(fs, 'doBuoyancy').name('Buoyancy');
 
-    gui.add(options, 'grayscale').name('Grayscale');
+    //gui.add(options, 'grayscale').name('Grayscale');
     gui.add(options, 'drawVelocityField').name('Draw Velocity Field');
-    gui.add(options, 'drawDensityField').name('Draw Density Field');
-    gui.add(options, 'drawParticles').name('Draw Particle Effect');
+    //gui.add(options, 'drawDensityField').name('Draw Density Field');
+    //gui.add(options, 'drawParticles').name('Draw Particle Effect');
 
-    gui.add(fs, 'resetVelocity').name('Reset Velocity');
-    gui.add(fs, 'resetDensity').name('Reset Density');
-    gui.add(options, 'resetParticles').name('Reset Particles');
+    //gui.add(fs, 'resetVelocity').name('Reset Velocity');
+    //gui.add(fs, 'resetDensity').name('Reset Density');
+    //gui.add(options, 'resetParticles').name('Reset Particles');
 
-    gui.add(fs, 'windSpeed', 0, 5).step(0.01).name('Wind Speed');
-    gui.add(fs, 'windDirection', 0, 360).step(1).name('Wind Directions');
+    gui.add(fs, 'windSpeed', 0, 1).step(0.01).name('Wind Speed');
+    gui.add(fs, 'windDirection', 0, 360).step(1).name('Wind Directions\ (In angles, north is 0, anticlockwise)');
     gui.add(fs, 'windLocations', 0, 128).step(1).name('Wind Locations');
 
     gui.add(fs, 'gasRelease', 0, 300).step(1).name('Gas Release');
