@@ -14,3 +14,5 @@ Running
 ---------
 
 Just open `index.html` in your browser.
+
+For nodejs - got to nodejs and run `nodejs .`.
