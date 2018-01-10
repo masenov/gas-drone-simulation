@@ -13,13 +13,7 @@ http.listen(3000, function(){
 io.on('connection', function(socket){
     socket.on('chat message', function(msg){
         console.log('message: ' + msg);
+        io.emit('chat message', 'test');
     });
 });
 
-io.emit('some event', { for: 'everyone' });
-
-io.on('connection', function(socket){
-    socket.on('chat message', function(msg){
-        io.emit('chat message', msg);
-    });
-});
