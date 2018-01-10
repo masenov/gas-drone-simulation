@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import GPy
 from IPython.display import display
-import plotly 
+import plotly
 plotly.tools.set_credentials_file(username='masenov', api_key='xtuT0tL0GZYldyT3JXGU')
 GPy.plotting.change_plotting_library('matplotlib')
 
@@ -31,14 +31,35 @@ Ys = Ys.reshape((3,1))
 X = np.concatenate((Xs,Ys), axis=1)
 print (X.shape,direction.shape,magnitude.shape)
 """
+
+
+"""
+# sample inputs and outputs
+n = 30
+nx, ny = (n, n)
+x = np.linspace(-5., 5, nx)
+y = np.linspace(-5., 5, ny)
+xv, yv = np.meshgrid(x, y)
+xv = np.array(xv).ravel()
+yv = np.array(yv).ravel()
+Y = np.multiply(np.sin(xv), np.sin(yv)) * 3.14 +np.squeeze(np.random.randn(n*n,1)*0.05)
+Z = np.multiply(np.cos(xv), np.cos(yv))+np.squeeze(np.random.randn(n*n,1)*0.05)
+"""
 # sample inputs and outputs
 n = 30
 X = np.random.uniform(-5.,5.,(n,2))
 Y = np.sin(X[:,0:1]) * np.sin(X[:,1:2]) * 3.14 +np.random.randn(n,1)*0.05
 Z = np.cos(X[:,0:1]) * np.cos(X[:,1:2])+np.random.randn(n,1)*0.05
-plt.quiver(X[:,0],X[:,1], np.cos(Y)*Z, np.sin(Y)*Z, color=['r'], scale=21, width=0.007, headwidth=2)
+
+
+
+
+#plt.quiver(xv,yv, np.cos(Y)*Z, np.sin(Y)*Z, color=['r'], scale=21, width=0.007, headwidth=2)
+plt.quiver(X[:,0],Y[:,0], np.cos(Y)*Z, np.sin(Y)*Z, color=['r'], scale=21, width=0.007, headwidth=2)
+plt.xlim(-5,5)
+plt.ylim(-5,5)
 plt.show()
-print (Y)
+#print (Y)
 #Y = direction.reshape((3,1))
 #Z = magnitude.reshape((3,1))
 # define kernel
