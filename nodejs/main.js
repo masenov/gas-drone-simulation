@@ -27,7 +27,6 @@
 
     // We draw the density on a bitmap for performance reasons
     var fdBuffer = context.createImageData(VIEW_SIZE, VIEW_SIZE);
-    var fs = 0;
 
     // Set render states
     canvas.width = canvas.height = VIEW_SIZE;       // View size
@@ -127,13 +126,12 @@
         //alert('Send request');
         socket.on('receive simulation data', function(newfs){
             //alert("Received data");
-            fs = newfs;
-            updateRender();
+            updateRender(newfs);
             socket.emit('update simulation', timestep);
         });
     }
 
-    function updateRender() {
+    function updateRender(fs) {
         var i, j, k, l, m, dx, dy, color, cellIndex, deltaTime,
             r, g, b, u, v, density, pxIdx, pxX, pxY,
             invMaxColor = 1.0 / 255;
@@ -250,7 +248,6 @@
 
         //var sum = fs.d.reduce(function(a, b) { return a + b; }, 0);
         updateDrawing();
-        //requestAnimationFrame(updateSimulation);
     }
 
 })(window, document);
