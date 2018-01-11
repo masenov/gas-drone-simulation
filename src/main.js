@@ -66,7 +66,7 @@
         particles = [];
 
     var options = {
-        drawVelocityField: false,
+        drawVelocityField: true,
         drawDensityField: true,
         drawParticles: true,
         grayscale: false,
@@ -412,9 +412,8 @@
 
         // lastTime is now
         lastTime = Date.now();
-
         requestAnimationFrame(update);
-
+        alert("test");
     } // End update()
 
     /**
