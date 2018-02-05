@@ -35,8 +35,8 @@ class FluidSimulation:
         # But I haven't seen any significant improvement on Chrome because V8 probably does it on its own.
 
         # Values for current simulation step
-        self.u = np.zeros(self.numOfCells) # Velocity x
-        self.v = np.zeros(self.numOfCells) # Velocity y
+        self.u = np.ones(self.numOfCells) * 0.001 # Velocity x
+        self.v = np.ones(self.numOfCells) * 0.001 # Velocity y
         self.d = np.zeros(self.numOfCells) # Density
 
         # Values from the last simulation step
