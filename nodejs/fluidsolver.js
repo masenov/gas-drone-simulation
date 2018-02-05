@@ -1,29 +1,6 @@
-(function (window) {
-    'use strict';
+(function (exports) {
 
-    // Export constructor
-    window['FluidSolver'] = FluidSolver;
-
-    /**
-     * A Simple fluid solver implementation in javascript.
-     *
-     * Largely based on Jos Stam's paper "Real-Time Fluid Dynamics for Games".
-     * @link http://www.dgp.toronto.edu/people/stam/reality/Research/pdf/GDC03.pdf
-     *
-     * Simulates the Navier–Stokes equations for incompressible fluids.
-     * @link http://en.wikipedia.org/wiki/Navier-Stokes_equations
-     *
-     * Other implementations I've looked at while making this.
-     * @link http://www.multires.caltech.edu/teaching/demos/java/stablefluids.htm
-     * @link http://blog.inspirit.ru/fluidsolver-as3-port-of-msafluid/
-     * @link http://http.developer.nvidia.com/GPUGems/gpugems_ch38.html
-     *
-     * @author Topaz Bar <topaz1008@gmail.com>
-     *
-     * @param n {Number} Number of fluid cells for the simulation grid in each dimension (NxN)
-     * @constructor
-     */
-    function FluidSolver(n) {
+    exports.FluidSolver = function(n) {
         var i;
 
         this.n = n;
@@ -35,7 +12,7 @@
         // Number of iterations to use in the Gauss-Seidel method in linearSolve()
         this.iterations = 10;
 
-        this.doVorticityConfinement = true;
+        this.doVorticityConfinement = false;
         this.doBuoyancy = false;
 
         // Two extra cells in each dimension for the boundaries
@@ -71,12 +48,12 @@
             this.dOld[i] = this.uOld[i] = this.vOld[i] = 0;
             this.curlData[i] = 0;
         }
-    }
+    };
 
     /** Boundaries enumeration. */
-    FluidSolver.BOUNDARY_NONE = 0;
-    FluidSolver.BOUNDARY_LEFT_RIGHT = 1;
-    FluidSolver.BOUNDARY_TOP_BOTTOM = 2;
+    exports.FluidSolver.BOUNDARY_NONE = 0;
+    exports.FluidSolver.BOUNDARY_LEFT_RIGHT = 1;
+    exports.FluidSolver.BOUNDARY_TOP_BOTTOM = 2;
 
     /**
      * A 'Private' stand alone function so closure compiler can inline this calculation once compiled.
@@ -92,6 +69,7 @@
         return i + (n + 2) * j;
     }
 
+
     /**
      * Fluid cell indexing helper function.
      * (x | x) is a faster Math.floor(x)
@@ -101,23 +79,24 @@
      * @return {number}
      * @public
      */
-    FluidSolver.prototype.I = function (i, j) {
+    exports.I = function (i, j) {
         return (i | i) + (this.n + 2) * (j | j);
     };
+
 
     /**
      * Density step.
      */
-    FluidSolver.prototype.densityStep = function () {
+    exports.densityStep = function () {
         var i;
 
         this.addSource(this.d, this.dOld);
 
         this.swapD();
-        this.diffuse(FluidSolver.BOUNDARY_NONE, this.d, this.dOld, this.diffusion);
+        this.diffuse(this.FluidSolver.BOUNDARY_NONE, this.d, this.dOld, this.diffusion);
 
         this.swapD();
-        this.advect(FluidSolver.BOUNDARY_NONE, this.d, this.dOld, this.u, this.v);
+        this.advect(this.FluidSolver.BOUNDARY_NONE, this.d, this.dOld, this.u, this.v);
 
         // Reset for next step
         for (i = 0; i < this.numOfCells; i++) {
@@ -128,7 +107,7 @@
     /**
      * Velocity step.
      */
-    FluidSolver.prototype.velocityStep = function () {
+    exports.velocityStep = function () {
         var i;
 
         this.addSource(this.u, this.uOld);
@@ -146,17 +125,17 @@
         }
 
         this.swapU();
-        this.diffuse(FluidSolver.BOUNDARY_LEFT_RIGHT, this.u, this.uOld, this.viscosity);
+        this.diffuse(this.FluidSolver.BOUNDARY_LEFT_RIGHT, this.u, this.uOld, this.viscosity);
 
         this.swapV();
-        this.diffuse(FluidSolver.BOUNDARY_TOP_BOTTOM, this.v, this.vOld, this.viscosity);
+        this.diffuse(this.FluidSolver.BOUNDARY_TOP_BOTTOM, this.v, this.vOld, this.viscosity);
 
         this.project(this.u, this.v, this.uOld, this.vOld);
         this.swapU();
         this.swapV();
 
-        this.advect(FluidSolver.BOUNDARY_LEFT_RIGHT, this.u, this.uOld, this.uOld, this.vOld);
-        this.advect(FluidSolver.BOUNDARY_TOP_BOTTOM, this.v, this.vOld, this.uOld, this.vOld);
+        this.advect(this.FluidSolver.BOUNDARY_LEFT_RIGHT, this.u, this.uOld, this.uOld, this.vOld);
+        this.advect(this.FluidSolver.BOUNDARY_TOP_BOTTOM, this.v, this.vOld, this.uOld, this.vOld);
 
         this.project(this.u, this.v, this.uOld, this.vOld);
 
@@ -169,7 +148,7 @@
     /**
      * Resets the density.
      */
-    FluidSolver.prototype.resetDensity = function () {
+    exports.resetDensity = function () {
         var i;
         for (i = 0; i < this.numOfCells; i++) {
             this.d[i] = 0;
@@ -179,7 +158,7 @@
     /**
      * Resets the velocity.
      */
-    FluidSolver.prototype.resetVelocity = function () {
+    exports.resetVelocity = function () {
         var i;
         for (i = 0; i < this.numOfCells; i++) {
             // Set a small value so we can render the velocity field
@@ -191,7 +170,7 @@
      * Swap velocity x reference.
      * @private
      */
-    FluidSolver.prototype.swapU = function () {
+    exports.swapU = function () {
         this.tmp = this.u;
         this.u = this.uOld;
         this.uOld = this.tmp;
@@ -201,7 +180,7 @@
      * Swap velocity y reference.
      * @private
      */
-    FluidSolver.prototype.swapV = function () {
+    exports.swapV = function () {
         this.tmp = this.v;
         this.v = this.vOld;
         this.vOld = this.tmp;
@@ -211,7 +190,7 @@
      * Swap density reference.
      * @private
      */
-    FluidSolver.prototype.swapD = function () {
+    exports.swapD = function () {
         this.tmp = this.d;
         this.d = this.dOld;
         this.dOld = this.tmp;
@@ -224,7 +203,7 @@
      * @param s {Array<Number>}
      * @private
      */
-    FluidSolver.prototype.addSource = function (x, s) {
+    exports.addSource = function (x, s) {
         var i;
         for (i = 0; i < this.numOfCells; i++) {
             x[i] += s[i] * this.dt;
@@ -241,7 +220,7 @@
      * @return {Number}
      * @private
      */
-    FluidSolver.prototype.curl = function (i, j) {
+    exports.curl = function (i, j) {
         var duDy = (this.u[I(this.n, i, j + 1)] - this.u[I(this.n, i, j - 1)]) * 0.5,
             dvDx = (this.v[I(this.n, i + 1, j)] - this.v[I(this.n, i - 1, j)]) * 0.5;
 
@@ -258,7 +237,7 @@
      * @param vcY {Array<Number>}
      * @private
      */
-    FluidSolver.prototype.vorticityConfinement = function (vcX, vcY) {
+    exports.vorticityConfinement = function (vcX, vcY) {
         var i, j, dx, dy, norm, v;
 
         // Calculate magnitude of curl(i, j) for each cell
@@ -305,7 +284,7 @@
      * @param buoy {Array<Number>}
      * @private
      */
-    FluidSolver.prototype.buoyancy = function (buoy) {
+    exports.buoyancy = function (buoy) {
         var i, j, length,
             tAmb = 0,
             a = 0.000625,
@@ -344,7 +323,7 @@
      * @param diffusion {Number}
      * @private
      */
-    FluidSolver.prototype.diffuse = function (b, x, x0, diffusion) {
+    exports.diffuse = function (b, x, x0, diffusion) {
         var a = this.dt * diffusion * this.n * this.n;
 
         this.linearSolve(b, x, x0, a, 1 + 4 * a);
@@ -362,7 +341,7 @@
      * @param v {Array<Number>}
      * @private
      */
-    FluidSolver.prototype.advect = function (b, d, d0, u, v) {
+    exports.advect = function (b, d, d0, u, v) {
         var i, j, i0, j0, i1, j1;
         var x, y, s0, t0, s1, t1, dt0;
 
@@ -374,7 +353,6 @@
 
                 if (x < 0.5) x = 0.5;
                 if (x > this.n + 0.5) x = this.n + 0.5;
-
                 i0 = (x | x);
                 i1 = i0 + 1;
 
@@ -411,7 +389,7 @@
      * @param div {Array<Number>}
      * @private
      */
-    FluidSolver.prototype.project = function (u, v, p, div) {
+    exports.project = function (u, v, p, div) {
         var i, j;
 
         // Calculate the gradient field
@@ -425,11 +403,11 @@
             }
         }
 
-        this.setBoundary(FluidSolver.BOUNDARY_NONE, div);
-        this.setBoundary(FluidSolver.BOUNDARY_NONE, p);
+        this.setBoundary(this.FluidSolver.BOUNDARY_NONE, div);
+        this.setBoundary(this.FluidSolver.BOUNDARY_NONE, p);
 
         // Solve the Poisson equations
-        this.linearSolve(FluidSolver.BOUNDARY_NONE, p, div, 1, 4);
+        this.linearSolve(this.FluidSolver.BOUNDARY_NONE, p, div, 1, 4);
 
         // Subtract the gradient field from the velocity field to get a mass conserving velocity field.
         for (i = 1; i <= this.n; i++) {
@@ -439,8 +417,8 @@
             }
         }
 
-        this.setBoundary(FluidSolver.BOUNDARY_LEFT_RIGHT, u);
-        this.setBoundary(FluidSolver.BOUNDARY_TOP_BOTTOM, v);
+        this.setBoundary(this.FluidSolver.BOUNDARY_LEFT_RIGHT, u);
+        this.setBoundary(this.FluidSolver.BOUNDARY_TOP_BOTTOM, v);
     };
 
     /**
@@ -453,7 +431,7 @@
      * @param c {Number}
      * @private
      */
-    FluidSolver.prototype.linearSolve = function (b, x, x0, a, c) {
+    exports.linearSolve = function (b, x, x0, a, c) {
         var i, j, k, invC = 1.0 / c;
 
         for (k = 0; k < this.iterations; k++) {
@@ -475,20 +453,20 @@
      * @param x {Array<Number>}
      * @private
      */
-    FluidSolver.prototype.setBoundary = function (b, x) {
+    exports.setBoundary = function (b, x) {
         var i;
 
         for (i = 1; i <= this.n; i++) {
-            x[I(this.n, 0, i)] = (b === FluidSolver.BOUNDARY_LEFT_RIGHT) ?
+            x[I(this.n, 0, i)] = (b === this.FluidSolver.BOUNDARY_LEFT_RIGHT) ?
                 -x[I(this.n, 1, i)] : 0;
 
-            x[I(this.n, this.n + 1, i)] = (b === FluidSolver.BOUNDARY_LEFT_RIGHT) ?
+            x[I(this.n, this.n + 1, i)] = (b === this.FluidSolver.BOUNDARY_LEFT_RIGHT) ?
                 -x[I(this.n, this.n, i)] : 0;
 
-            x[I(this.n, i, 0)] = (b === FluidSolver.BOUNDARY_TOP_BOTTOM) ?
+            x[I(this.n, i, 0)] = (b === this.FluidSolver.BOUNDARY_TOP_BOTTOM) ?
                 -x[I(this.n, i, 1)] : 0;
 
-            x[I(this.n, i, this.n + 1)] = (b === FluidSolver.BOUNDARY_TOP_BOTTOM) ?
+            x[I(this.n, i, this.n + 1)] = (b === this.FluidSolver.BOUNDARY_TOP_BOTTOM) ?
                 -x[I(this.n, i, this.n)] : 0;
         }
 
@@ -498,4 +476,6 @@
         x[I(this.n, this.n + 1, this.n + 1)] = 0.5 * (x[I(this.n, this.n, this.n + 1)] + x[I(this.n, this.n + 1, this.n)]);
     };
 
-})(window);
+
+
+})(typeof exports === 'undefined'? this['fs']={}: exports);
