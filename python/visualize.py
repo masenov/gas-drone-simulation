@@ -9,25 +9,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import h5py
-
-fig = plt.figure()
-
-
-file = h5py.File("mytestfile2.hdf5", "r")
-def f(x, y):
-    return np.sin(x) + np.cos(y)
-
-x = np.linspace(0, 2 * np.pi, 120)
-y = np.linspace(0, 2 * np.pi, 100).reshape(-1, 1)
-i = 0
-im = plt.imshow(f(x, y), animated=True)
+import sys, traceback
 
 
-def updatefig(*args):
-    global x, y, i
-    im.set_array(file['test'+str(i)])
-    i += 1
-    return im,
 
-ani = animation.FuncAnimation(fig, updatefig, interval=1, blit=True)
-plt.show()
+class Visualize:
+    def __init__(self, filename, timesteps):
+        self.file= h5py.File(filename+".hdf5", "r")
+        self.i = 0
+        self.fig = plt.figure()
+        self.im = plt.imshow(np.random.random((100,100)), animated=True)
+        ani = animation.FuncAnimation(self.fig, self.updatefig, frames=timesteps - 2, interval=0, blit=True, repeat=False)
+        plt.show(block=False)
+
+
+    def updatefig(self,*args):
+        self.im.set_array(self.file['test'+str(self.i)])
+        self.i += 1
+        return self.im,
+
+

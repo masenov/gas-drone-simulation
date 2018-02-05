@@ -1,9 +1,7 @@
 import numpy as np
 import time
 import timeit
-import cv2
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import h5py
 
 class FluidSimulation:
@@ -27,7 +25,7 @@ class FluidSimulation:
         self.tmp = None # Scratch space for references swapping
 
         self.windSpeed = 0.16
-        self.windDirection = 0.0
+        self.windDirection = 180.0
         self.windLocations = 32
 
         self.gasRelease = 110
@@ -80,16 +78,6 @@ class FluidSimulation:
         self.index = 0
 
 
-    """
-     * A 'Private' stand alone function so closure compiler can inline this calculation once compiled.
-     * DOES NOT make sure the indexes are integers.
-     *
-     * @param n {Number}
-     * @param i {Number}
-     * @param j {Number}
-     * @returns {Number}
-     * @private
-     """
     def I(self, i, j):
         return i + (self.n + 2) * j
 
@@ -173,31 +161,24 @@ class FluidSimulation:
 
     """
      * Swap velocity x reference.
-     * @private
      """
     def swapU(self):
         self.u, self.uOld = self.uOld, self.u
 
     """
      * Swap velocity y reference.
-     * @private
      """
     def swapV(self):
         self.v, self.vOld = self.vOld, self.v
 
     """
      * Swap density reference.
-     * @private
      """
     def swapD(self):
         self.d, self.dOld = self.dOld, self.d
 
     """
      * Integrate the density sources.
-     *
-     * @param x {Array<Number>}
-     * @param s {Array<Number>}
-     * @private
      """
     def addSource(self, x, s):
         x += s * self.dt
@@ -206,11 +187,6 @@ class FluidSimulation:
      * Calculate the curl at cell (i, j)
      * This represents the vortex strength at the cell.
      * Computed as: w = (del x U) where U is the velocity vector at (i, j).
-     *
-     * @param i Number
-     * @param j {Number}
-     * @return {Number}
-     * @private
      """
     def curl(self, i, j):
         duDy = (self.u[self.I(i, j + 1)] - self.u[self.I(i, j - 1)]) * 0.5
@@ -223,10 +199,6 @@ class FluidSimulation:
      * Fvc = (N x W) where W is the curl at (i, j) and N = del |W| / |del |W||.
      * N is the vector pointing to the vortex center, hence we
      * add force perpendicular to N.
-     *
-     * @param vcX {Array<Number>}
-     * @param vcY {Array<Number>}
-     * @private
      """
     def vorticityConfinement(self, vcX, vcY):
 
@@ -295,12 +267,6 @@ class FluidSimulation:
 
     """
      * Diffuse the density between neighbouring cells.
-     *
-     * @param b {Number}
-     * @param x {Array<Number>}
-     * @param x0 {Array<Number>}
-     * @param diffusion {Number}
-     * @private
      """
     def diffuse(self, b, x, x0, diffusion):
         a = self.dt * diffusion * self.n * self.n
@@ -311,13 +277,6 @@ class FluidSimulation:
      * The advection step moves the density through the static velocity field.
      * Instead of moving the cells forward in time, we treat the cell's center as a particle
      * and then trace it back in time to look for the 'particles' which end up at the cell's center.
-     *
-     * @param b:Number}
-     * @param d:Array<Number>}
-     * @param d0:Array<Number>}
-     * @param u:Array<Number>}
-     * @param v:Array<Number>}
-     * @private
      """
     def advect(self, b, d, d0, u, v):
 
@@ -572,10 +531,3 @@ class FluidSimulation:
         return min + np.random() * ((max + 1) - min)
 
 
-
-fs = FluidSimulation(256)
-fs.resetVelocity()
-
-f = h5py.File("mytestfile2.hdf5", "w")
-for i in range(100):
-    fs.update(f)
