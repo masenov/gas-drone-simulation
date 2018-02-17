@@ -24,8 +24,13 @@ class Visualize:
 
 
     def updatefig(self,*args):
-        self.im.set_array(self.file['test'+str(self.i)])
-        self.i += 1
-        return self.im,
+        try:
+            self.im.set_array(self.file['test'+str(self.i)])
+            self.i += 1
+            print (self.file['wind'+str(self.i)][0])
+            return self.im,
+        except:
+            input("Press Enter to continue...")
+            return
 
 

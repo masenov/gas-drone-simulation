@@ -3,9 +3,10 @@ import time
 import timeit
 import matplotlib.pyplot as plt
 import h5py
+import random
 
 class FluidSimulation:
-    def __init__(self, n):
+    def __init__(self, n, windDirection=180.0, windLocations=32, windSpeed=0.02, windNoise=180, windNoiseTimestep=300, windLocalNoise=0.001):
 
         self.n = n
 
@@ -24,13 +25,20 @@ class FluidSimulation:
 
         self.tmp = None # Scratch space for references swapping
 
-        self.windSpeed = 0.16
-        self.windDirection = 180.0
-        self.windLocations = 32
+        self.windSpeed = windSpeed
+        self.windDirection = windDirection
+        self.windLocations = windLocations
+        # Change wind direction after N-th timesteps
+        self.windNoise = windNoise
+        self.windNoiseTimestep = windNoiseTimestep
+        self.windNoiseCurrentStep = self.windNoiseTimestep
+        self.windNoiseCurrent = 0
+        # Local noise at each location
+        self.windLocalNoise = windLocalNoise
 
         self.gasRelease = 110
-        self.gasLocationX = 64
-        self.gasLocationY = 168
+        self.gasLocationX = n/2
+        self.gasLocationY = n/2
         # Self might benefit from using typed arrays like Float32Array in some configuration.
         # But I haven't seen any significant improvement on Chrome because V8 probably does it on its own.
 
@@ -67,8 +75,8 @@ class FluidSimulation:
         self.i = np.arange(1,self.n+1)
         self.j = np.arange(1,self.n+1)
         ii, jj = np.meshgrid(self.i,self.j)
-        self.ii = ii.flatten()
-        self.jj = jj.flatten()
+        self.ii = ii.ravel()
+        self.jj = jj.ravel()
         self.Iij = self.I(self.ii, self.jj)
         print (self.ii.shape, self.Iij.shape)
         self.Iij0 = self.I(self.ii + 1, self.jj)
@@ -77,6 +85,8 @@ class FluidSimulation:
         self.Iij3 = self.I(self.ii, self.jj - 1)
         self.index = 0
 
+    def randomWind(self):
+        return (random.random()*2-1)*self.windLocalNoise
 
     def I(self, i, j):
         return i + (self.n + 2) * j
@@ -101,11 +111,7 @@ class FluidSimulation:
      * Velocity step.
      """
     def velocityStep(self):
-        #print ("Start")
-        start = time.time()
         self.addSource(self.u, self.uOld)
-        start2 = time.time()
-        #print ("addSource: " + str(start2-start))
         self.addSource(self.v, self.vOld)
 
         if (self.doVorticityConfinement):
@@ -116,28 +122,17 @@ class FluidSimulation:
         if (self.doBuoyancy):
             self.buoyancy(self.vOld)
             self.addSource(self.v, self.vOld)
-        start = time.time()
         self.swapU()
-        start2 = time.time()
-       #print ("Swap: " + str(start2-start))
         self.diffuse(self.BOUNDARY_LEFT_RIGHT, self.u, self.uOld, self.viscosity)
-        start3 = time.time()
-       #print ("Diffuse: " + str(start3-start2))
 
         self.swapV()
         self.diffuse(self.BOUNDARY_TOP_BOTTOM, self.v, self.vOld, self.viscosity)
 
-        start = time.time()
         self.project(self.u, self.v, self.uOld, self.vOld)
-        start2 = time.time()
-       #print ("Project: " + str(start2-start))
         self.swapU()
         self.swapV()
 
-        start = time.time()
         self.advect(self.BOUNDARY_LEFT_RIGHT, self.u, self.uOld, self.uOld, self.vOld)
-        start2 = time.time()
-       #print ("Advect: " + str(start2-start))
         self.advect(self.BOUNDARY_TOP_BOTTOM, self.v, self.vOld, self.uOld, self.vOld)
 
         self.project(self.u, self.v, self.uOld, self.vOld)
@@ -444,7 +439,7 @@ class FluidSimulation:
      * @private
      """
     def setBoundary(self, b, x):
-        
+
 
         #i = np.arange(1,self.n+1)
 
@@ -507,8 +502,15 @@ class FluidSimulation:
 
 
         # Artificial wind field
-        du = np.sin(self.toRadians(self.windDirection-180))*self.windSpeed
-        dv = np.cos(self.toRadians(self.windDirection-180))*self.windSpeed
+        if self.windNoiseCurrentStep == self.windNoiseTimestep:
+            rand = (np.random.rand()*2 - 1)*self.windNoise
+            self.windNoiseCurrent = rand
+            self.windNoiseCurrentStep = 0
+        else:
+            rand = self.windNoiseCurrent
+            self.windNoiseCurrentStep += 1
+        du = np.sin(self.toRadians(self.windDirection + rand - 180))*self.windSpeed
+        dv = np.cos(self.toRadians(self.windDirection + rand - 180))*self.windSpeed
         # Add the mouse velocity to cells above, below, to the left, and to the right as well.
         nps = self.windLocations
         acc = self.NUM_OF_CELLS/nps
@@ -516,14 +518,16 @@ class FluidSimulation:
             for j in range(nps):
                 ii = int(i*acc)
                 jj = int(j*acc)
-                self.uOld[self.I(ii, jj)] = du
-                self.vOld[self.I(ii, jj)] = dv
+                self.uOld[self.I(ii, jj)] = du + self.randomWind()
+                self.vOld[self.I(ii, jj)] = dv + self.randomWind()
         #self.update()
         # lastTime is now
         # End update()
         #np.save('data/test' + str(self.index) + '.npy',self.d)
-        dset = f.create_dataset('test' + str(self.index), (self.n + 2,self.n + 2), dtype='f')
-        dset[...] = self.d.reshape(258,258)
+        dset = f.create_dataset('test' + str(self.index), (self.n + 2,self.n + 2), dtype='f', compression="gzip")
+        dset[...] = self.d.reshape(self.n+2,self.n+2)
+        dset2 = f.create_dataset('wind' + str(self.index), (1,2), dtype='f', compression="gzip")
+        dset2[...] = np.array([[self.windDirection + rand, self.windSpeed]])
         self.index += 1
 
 
