@@ -29,12 +29,27 @@ def sample(f, size=1000, timestep=40, locations=5, gridSize=130, offset=20):
 
 
 def sample_vis(concentrations):
+    plt.figure()
     plt.ion()     # turns on interactive mode
     for i in range(concentrations.shape[0]):
         plt.imshow(concentrations[i,:,:]/concentrations.max())
         plt.show()
         print concentrations
         plt.pause(0.01)
+    plt.ioff()     # turns on interactive mode
+
+
+def real_sample_vis(concentrations):
+    plt.ion()     # turns on interactive mode
+    true_sample = np.zeros((5,5))
+    n = 0
+    for i in range(5):
+        for j in range(5):
+            true_sample[i,j] = concentrations[n,i,j]
+            n = n + 1
+
+    plt.imshow(true_sample)
+    plt.show()
     plt.ioff()     # turns on interactive mode
 
 
@@ -62,5 +77,6 @@ else:
     f = h5py.File(filename + ".hdf5", "r")
 
 concentrations, wind = sample(f)
+real_sample_vis(concentrations)
 sample_vis(concentrations)
 run(fs,f,timesteps,simulate=simulate)
